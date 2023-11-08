@@ -2,6 +2,7 @@ package bencode
 
 import (
 	// "fmt"
+	"slices"
 	"strconv"
 	"testing"
 )
@@ -99,6 +100,64 @@ func TestParseStringWithReturn(t *testing.T) {
 
 		if result != ExpectedResult || rest != ExpectedRest || err != nil {
 			t.Fatalf(`ParseString("%s")=%s, %s, %v. Want %s, %s, <nil>.`, key, result, rest, err, ExpectedResult, ExpectedRest)
+		}
+	}
+}
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+func TestParseListShouldFail(t *testing.T) {
+	values := []string{
+		"l5:hello5:world",
+		"7:console",
+		"l1&:game of the tear",
+		"l&:ae",
+	}
+
+	for _, v := range values {
+		_, _, err := ParseList(v, false)
+		if err == nil {
+			t.Fatalf("Got err=<nil> for %s. Want err != <nil>", v)
+		}
+	}
+}
+
+func TestParseListWithoutReturn(t *testing.T) {
+	values := map[string][]string{
+		"l5:hello4:it's2:an7:amazing5:worlde": {"hello", "it's", "an", "amazing", "world"},
+		"l7:consolee":                         {"console"},
+		"le":                                  {},
+	}
+
+	for k, v := range values {
+		result, rest, err := ParseList(k, false)
+
+		if slices.Compare(result, v) != 0 || rest != "" || err != nil {
+			t.Fatalf("ParseList(%s)=%s, %s, %v. Want %s, , <nil>", k, result, rest, err, v)
+		}
+	}
+}
+
+func TestParseListWithReturn(t *testing.T) {
+	values := map[string][]string{
+		"l5:hello4:it's2:an7:amazing5:worldeblahblah": {"hello", "it's", "an", "amazing", "world"},
+		"l7:consoleei32e": {"console"},
+		"lekekw":          {},
+	}
+
+	rests := map[string]string{
+		"l5:hello4:it's2:an7:amazing5:worldeblahblah": "blahblah",
+		"l7:consoleei32e": "i32e",
+		"lekekw":          "kekw",
+	}
+
+	for k, v := range values {
+		result, rest, err := ParseList(k, true)
+
+		if slices.Compare(result, v) != 0 || rest != rests[k] || err != nil {
+			t.Fatalf("ParseList(%s)=%s, %s, %v. Want %s, %s, <nil>", k, result, rest, err, v, rests[k])
 		}
 	}
 }
