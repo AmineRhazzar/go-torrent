@@ -57,3 +57,48 @@ func TestParseIntWithReturn(t *testing.T) {
 // ------------------------------------------------------------------------------------------------
 // ------------------------------------------------------------------------------------------------
 
+func TestParseStringShouldFail(t *testing.T) {
+	values := []string{"5hello", ":hello", "hello", "&:a", "1a:hello world", "4:hi", "5:"}
+
+	for _, v := range values {
+		_, _, err := ParseString(v, false)
+		if err == nil {
+			t.Fatalf("Got err = <nil> for ParseString(%s). Want err != <nil>", v)
+		}
+	}
+}
+
+func TestParseStringWithoutReturn(t *testing.T) {
+	values := map[string]string{
+		"5:hello":         "hello",
+		"0:":              "",
+		"1:a":             "a",
+		"12: hello world": " hello world",
+	}
+
+	for key, value := range values {
+
+		result, rest, err := ParseString(key, false)
+		if value != result || rest != "" || err != nil {
+			t.Fatalf(`ParseString("%s")=%s, %s, %v. Want %s, , <nil>.`, key, result, rest, err, value)
+		}
+	}
+}
+
+func TestParseStringWithReturn(t *testing.T) {
+	values := map[string][]string{
+		"5:grape":              {"grape", ""},
+		"0:plane":              {"", "plane"},
+		"6:panic at the disco": {"panic ", "at the disco"},
+	}
+
+	for key, value := range values {
+
+		result, rest, err := ParseString(key, true)
+		ExpectedResult, ExpectedRest := value[0], value[1]
+
+		if result != ExpectedResult || rest != ExpectedRest || err != nil {
+			t.Fatalf(`ParseString("%s")=%s, %s, %v. Want %s, %s, <nil>.`, key, result, rest, err, ExpectedResult, ExpectedRest)
+		}
+	}
+}
