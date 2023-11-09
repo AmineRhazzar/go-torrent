@@ -1,13 +1,18 @@
 package main
 
-import ( 
-	// bencode "go-torrent/pkg/bencode"
-	// "fmt"
+import (
+	"fmt"
+	"go-torrent/pkg/bencode"
 )
+
+func PrettyPrint(dict map[string]bencode.DictionaryElement){
+	// put this in bencode
+	// print in json ideally
+}
+
 
 
 func main() {
-	// fmt.Println(bencode.ParseInt("i3e"))
-	// fmt.Println(bencode.ParseInt("i3e"))
-
+	_, _, err := bencode.ParseDictionary("d3:cowsl3:bob4:maryee")
+	fmt.Printf("%v\n", err)
 }
