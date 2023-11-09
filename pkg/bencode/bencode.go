@@ -2,6 +2,7 @@ package bencode
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	// "github.com/davecgh/go-spew/spew"
 )
@@ -178,6 +179,10 @@ func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 			i += j + 1
 		} else if s[i] == 'e' {
 			finalStopIndex = i
+			if currKey != "" {
+				// there's is a key with no corresponding value
+				return emptyDict, 0, fmt.Errorf("can't parse dictionary from string %s. Reason: found key without corresponding value", s)
+			}
 			break
 		} else {
 			// must be a string
@@ -257,4 +262,33 @@ func stringifyJson(elements []jsonElement) string {
 
 func PrintDictionary(dict map[string]DictionaryElement) {
 	fmt.Println(stringifyJson(jsonifyDictionary(dict, 1)))
+}
+
+func Equals(dict1 map[string]DictionaryElement, dict2 map[string]DictionaryElement) bool {
+	for k1, v1 := range dict1 {
+		v2, ok := dict2[k1]
+		if !ok || v1.Kind != v2.Kind {
+			return false
+		}
+
+		switch v1.Kind {
+		case INTEGER:
+			if v1.Integer != v2.Integer {
+				return false
+			}
+		case STRING:
+			if v1.String != v2.String {
+				return false
+			}
+		case LIST:
+			if slices.Compare(v1.List, v2.List) != 0 {
+				return false
+			}
+		case DICTIONARY:
+			if !Equals(v1.Dictionary, v2.Dictionary) {
+				return false
+			}
+		}
+	}
+	return true
 }

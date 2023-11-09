@@ -1,2 +1,4 @@
 [ ] explore using stacks (or a queue idk) to parse bencoded format
 [ ] add test_coverage.txt for the gocov coverage report and push it to git
+[ ] parse bencoded bytes not strings
+[ ] use interface{} instead of DictionaryElement

@@ -118,3 +118,52 @@ func TestParseList(t *testing.T) {
 		}
 	}
 }
+
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+// ------------------------------------------------------------------------------------------------
+
+func TestParseDictionaryShouldFail(t *testing.T) {
+	values := []string{
+		"d5:hello5:world",
+		"d7:consolee",
+		"d7:consolesl3:ps43:ps5ee",
+		"d1&:game of the year10:elden ringe",
+	}
+
+	for _, v := range values {
+		_, _, err := ParseDictionary(v)
+		if err == nil {
+			t.Fatalf("Got err=<nil> for %s. Want err != <nil>", v)
+		}
+	}
+}
+
+func TestParseDictionary(t *testing.T){
+	values := map[string]map[string]DictionaryElement{
+		"d5:hello5:worlde": {
+			"hello": DictionaryElement{Kind: STRING, String: "world"},
+		},
+		"d7:consoled4:name3:ps4ee": {
+			"console": DictionaryElement{
+				Kind: DICTIONARY,
+				Dictionary: map[string]DictionaryElement{
+					"name": {Kind: STRING, String: "ps4"},
+				},
+			},
+		},
+		"d8:consolesl3:ps43:ps5ee": {
+			"consoles": DictionaryElement{Kind: LIST,List: []string{"ps4", "ps5"}},		},
+		"d4:yeari2023ee": {
+			"year": DictionaryElement{Kind: INTEGER, Integer: 2023},
+		},
+	}
+
+	for k, v := range values {
+		result, _, err := ParseDictionary(k)
+
+		if !Equals(result, v) || err != nil  {
+			t.Fatalf("ParseDictionary(%s)=%v %d, %v. Want %v, %d, <nil>", k, result, 0, err, v, 0)
+		}
+	}
+}
