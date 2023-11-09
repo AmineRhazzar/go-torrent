@@ -3,6 +3,7 @@ package bencode
 import (
 	"fmt"
 	"strconv"
+	// "github.com/davecgh/go-spew/spew"
 )
 
 type DictionaryElementType int
@@ -118,28 +119,12 @@ func ParseList(s string) ([](string), int, error) {
 	return list, stopIndex, nil
 }
 
-/**
-d3:cow3:moo4:spam4:eggs3:qtei3ee
-      ^
-- i=0
-  push to stack: [d]
-- i=1
-  s[i] != 'l', 'd', 'e', 'i' => must be a string
-  parsedString, stopIndex = parseString(s[i:]) = cow, 5
-  if currKey == "" currKey = parsedString
-  else dict[currKey] = DictionaryElement{..., parsedString,...}
-  i+=stopIndex
-- i=6
-
-
-*/
-
 func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 	emptyDict := make(map[string]DictionaryElement)
 	dict := emptyDict
 
 	if s[0] != 'd' {
-		return dict, 0, fmt.Errorf("can't parse dictionary from string %s", s)
+		return emptyDict, 0, fmt.Errorf("can't parse dictionary from string %s", s)
 	}
 	n := len(s)
 	currKey := ""
@@ -160,7 +145,7 @@ func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 				}
 				currKey = ""
 			}
-			i += j+1
+			i += j + 1
 		} else if s[i] == 'l' {
 			list, j, err := ParseList(s[i:])
 			if err != nil {
@@ -175,7 +160,7 @@ func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 				}
 				currKey = ""
 			}
-			i += j+1
+			i += j + 1
 		} else if s[i] == 'd' {
 			innerDict, j, err := ParseDictionary(s[i:])
 			if err != nil {
@@ -185,15 +170,15 @@ func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 				return emptyDict, 0, fmt.Errorf("can't parse dictionary from string %s. Reason: No key for dictionary %+v (position: %d)", s, innerDict, i)
 			} else {
 				dict[currKey] = DictionaryElement{
-					Kind: DICTIONARY,
+					Kind:       DICTIONARY,
 					Dictionary: innerDict,
 				}
 				currKey = ""
 			}
-			i += j+1
+			i += j + 1
 		} else if s[i] == 'e' {
 			finalStopIndex = i
-			i++
+			break
 		} else {
 			// must be a string
 			str, j, err := ParseString(s[i:])
@@ -209,7 +194,7 @@ func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 				}
 				currKey = ""
 			}
-			i += j+1
+			i += j + 1
 		}
 	}
 
@@ -217,4 +202,59 @@ func ParseDictionary(s string) (map[string]DictionaryElement, int, error) {
 		return emptyDict, 0, fmt.Errorf("can't parse dictionary from string %s. Reason: can't find stop character 'e' for dictionary", s)
 	}
 	return dict, finalStopIndex, nil
+}
+
+type jsonElement struct {
+	k     string
+	v     string
+	depth int
+}
+
+func indent(n int) string {
+	s := ""
+	for i := 0; i < n; i++ {
+		s += " "
+	}
+	return s
+}
+
+func jsonifyDictionary(dict map[string]DictionaryElement, depth int) []jsonElement {
+	var elements []jsonElement
+	for key, val := range dict {
+		switch val.Kind {
+		case INTEGER:
+			elements = append(elements, jsonElement{
+				k: key, v: fmt.Sprintf("%d", val.Integer), depth: depth,
+			})
+		case STRING:
+			elements = append(elements, jsonElement{
+				k: key, v: val.String, depth: depth,
+			})
+		case LIST:
+			elements = append(elements, jsonElement{
+				k: key, v: fmt.Sprintf("%s", val.List), depth: depth,
+			})
+		case DICTIONARY:
+			elements = append(elements, jsonElement{
+				k: key, v: stringifyJson(jsonifyDictionary(val.Dictionary, depth+1)), depth: depth,
+			})
+		}
+	}
+	return elements
+}
+
+func stringifyJson(elements []jsonElement) string {
+	numSpacesIn := elements[0].depth * 4
+	numSpacesOut := (elements[0].depth - 1) * 4
+
+	s := "\n" + indent(numSpacesOut) + "{\n"
+	for _, el := range elements {
+		s += indent(numSpacesIn) + el.k + ": " + el.v + "\n"
+	}
+	s += indent(numSpacesOut) + "}"
+	return s
+}
+
+func PrintDictionary(dict map[string]DictionaryElement) {
+	fmt.Println(stringifyJson(jsonifyDictionary(dict, 1)))
 }
